@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>类型分析 - 电影数据分析系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .genre-card {
+            transition: transform 0.3s;
+            height: 100%;
+        }
+        .genre-card:hover {
+            transform: translateY(-3px);
+        }
+        .progress {
+            height: 8px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-film me-2"></i>电影数据分析系统
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/">首页</a>
+                <a class="nav-link" href="/search">电影搜索</a>
+                <a class="nav-link" href="/directors">导演分析</a>
+                <a class="nav-link active" href="/genres">类型分析</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容 -->
+    <div class="container mt-4">
+        <!-- 类型统计概览 -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card genre-card text-white bg-primary">
+                    <div class="card-body text-center">
+                        <h3>{{ genre_stats|length }}</h3>
+                        <p class="mb-0">电影类型总数</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card genre-card text-white bg-success">
+                    <div class="card-body text-center">
+                        <h3>{{ genre_stats.values()|max }}</h3>
+                        <p class="mb-0">最多电影类型数量</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card genre-card text-white bg-warning">
+                    <div class="card-body text-center">
+                        <h3>{{ (genre_ratings.values()|max)|round(2) }}</h3>
+                        <p class="mb-0">最高类型平均评分</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card genre-card text-white bg-info">
+                    <div class="card-body text-center">
+                        <h3>{{ (genre_stats.values()|sum) }}</h3>
+                        <p class="mb-0">总类型出现次数</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 类型详细统计 -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-chart-pie me-2"></i>电影类型详细统计</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead class="table-primary">
+                                    <tr>
+                                        <th>电影类型</th>
+                                        <th>电影数量</th>
+                                        <th>占比</th>
+                                        <th>平均评分</th>
+                                        <th>进度条</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% set total_movies = genre_stats.values()|sum %}
+                                    {% for genre, count in genre_stats.items()|sort(attribute='1', reverse=True) %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ genre }}</strong>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-primary">{{ count }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="text-muted">{{ "%.1f"|format((count / total_movies * 100)) }}%</span>
+                                        </td>
+                                        <td>
+                                            {% if genre in genre_ratings %}
+                                                <span class="badge bg-warning text-dark">{{ genre_ratings[genre] }}</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">N/A</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="progress">
+                                                <div class="progress-bar bg-success" 
+                                                     role="progressbar" 
+                                                     style="width: {{ (count / total_movies * 100)|round|int }}%"
+                                                     aria-valuenow="{{ count }}" 
+                                                     aria-valuemin="0" 
+                                                     aria-valuemax="{{ total_movies }}">
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 类型排名 -->
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6><i class="fas fa-trophy me-2"></i>最受欢迎类型 (Top 5)</h6>
+                    </div>
+                    <div class="card-body">
+                        {% for genre, count in (genre_stats.items()|sort(attribute='1', reverse=True))[:5] %}
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <span class="fw-bold">{{ genre }}</span>
+                                <br>
+                                <small class="text-muted">{{ "%.1f"|format((count / total_movies * 100)) }}% 占比</small>
+                            </div>
+                            <span class="badge bg-primary">{{ count }} 部</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6><i class="fas fa-star me-2"></i>最高评分类型 (Top 5)</h6>
+                    </div>
+                    <div class="card-body">
+                        {% for genre, rating in (genre_ratings.items()|sort(attribute='1', reverse=True))[:5] %}
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <span class="fw-bold">{{ genre }}</span>
+                                <br>
+                                <small class="text-muted">{{ genre_stats[genre] }} 部电影</small>
+                            </div>
+                            <span class="badge bg-warning text-dark">{{ rating }} 分</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 类型组合分析 -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h6><i class="fas fa-layer-group me-2"></i>常见类型组合</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% set common_combinations = [
+                            ('Drama', '最常出现的类型'),
+                            ('Comedy', '喜剧类型'),
+                            ('Action', '动作类型'),
+                            ('Thriller', '惊悚类型'),
+                            ('Adventure', '冒险类型')
+                            ] %}
+                            {% for genre, description in common_combinations %}
+                            {% if genre in genre_stats %}
+                            <div class="col-md-4 mb-3">
+                                <div class="card genre-card">
+                                    <div class="card-body text-center">
+                                        <h5 class="card-title text-primary">{{ genre }}</h5>
+                                        <p class="card-text text-muted">{{ description }}</p>
+                                        <div class="mt-3">
+                                            <span class="badge bg-primary">{{ genre_stats[genre] }} 部</span>
+                                            {% if genre in genre_ratings %}
+                                            <span class="badge bg-warning text-dark ms-1">{{ genre_ratings[genre] }} 分</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="bg-dark text-light py-4 mt-5">
+        <div class="container text-center">
+            <p class="mb-0">电影数据分析系统 &copy; 2024 - 基于第6章6.5案例电影数据分析</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
